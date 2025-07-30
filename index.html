@@ -3,61 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Genesis: Mission Control</title>
+    <title>Command Center</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Icon Library: Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
 </head>
 <body>
-    <div class="dashboard-container">
-        <!-- LEFT PANEL: The main mission list -->
-        <aside class="left-panel">
-            <header class="main-header">
-                <h1>PROJECT GENESIS</h1>
-                <label for="csvUploader" class="uploader-label">Load Mission Plan</label>
-                <input type="file" id="csvUploader" accept=".csv">
-            </header>
-
-            <div class="overall-progress">
-                <div class="progress-bar-container">
-                    <div id="overallProgressBar" class="progress-bar"></div>
-                </div>
-                <span id="overallProgressText">Load a plan to begin...</span>
+    <div class="command-center">
+        <!-- COLUMN 1: SLIM NAVIGATION SIDEBAR -->
+        <nav class="sidebar">
+            <div class="logo">
+                <i class="fa-solid fa-rocket"></i>
             </div>
+            <ul>
+                <li class="nav-item active" data-view="plan" title="Mission Plan"><i class="fa-solid fa-list-check"></i></li>
+                <li class="nav-item" data-view="dashboard" title="Metrics Dashboard"><i class="fa-solid fa-chart-pie"></i></li>
+            </ul>
+            <div class="file-loader">
+                <label for="csvUploader" title="Load New Plan"><i class="fa-solid fa-file-arrow-up"></i></label>
+                <input type="file" id="csvUploader" accept=".csv">
+            </div>
+        </nav>
 
+        <!-- COLUMN 2: MAIN CONTENT (THE PLAN) -->
+        <main class="main-content">
+            <header class="main-header">
+                <h2>Mission Plan</h2>
+                <div class="overall-progress">
+                    <span id="overallProgressText">Load a plan...</span>
+                    <div class="progress-bar-container">
+                        <div id="overallProgressBar" class="progress-bar"></div>
+                    </div>
+                </div>
+            </header>
             <div id="phaseList" class="phase-list">
-                <!-- Phases will be dynamically added here -->
+                <p class="placeholder-text">Load a CSV file using the <i class="fa-solid fa-file-arrow-up"></i> icon in the sidebar to begin.</p>
+            </div>
+        </main>
+
+        <!-- COLUMN 3: CONTEXT PANEL (STARMAP & DETAILS) -->
+        <aside class="context-panel">
+            <div id="starmapView" class="starmap-view">
+                <!-- Starmap is shown here by default -->
+            </div>
+            <div id="detailView" class="detail-view hidden">
+                <button class="close-detail-view" title="Back to Starmap"><i class="fa-solid fa-xmark"></i></button>
+                <h3 id="detailTitle"></h3>
+                <div class="detail-grid">
+                    <span>Status</span><div id="detailStatus" class="badge"></div>
+                    <span>Phase</span><div id="detailPhase"></div>
+                    <span>Risk Level</span><div id="detailRisk" class="badge"></div>
+                </div>
+                <h4><i class="fa-solid fa-circle-info"></i> Description</h4>
+                <p id="detailDescription"></p>
             </div>
         </aside>
 
-        <!-- RIGHT PANEL: The details and map view -->
-        <main class="right-panel">
-            <div id="detailView" class="detail-view">
-                <div class="detail-placeholder">
-                    <h2>MILESTONE DETAILS</h2>
-                    <p>Select a milestone from the list to view its details.</p>
-                </div>
-                <div id="detailContent" class="detail-content hidden">
-                    <h2 id="detailTitle"></h2>
-                    <div class="detail-grid">
-                        <div>Status</div><div id="detailStatus" class="status-badge"></div>
-                        <div>Phase</div><div id="detailPhase"></div>
-                        <div>Risk</div><div id="detailRisk" class="risk-badge"></div>
-                    </div>
-                    <h3>Description</h3>
-                    <p id="detailDescription"></p>
-                </div>
-            </div>
-
-            <div id="starmapView" class="starmap-view hidden">
-                 <!-- The visual starmap will be rendered here -->
-            </div>
-            
-            <div class="view-toggle">
-                <button id="toggleButton" class="toggle-button">Show Starmap</button>
-            </div>
-        </main>
+        <!-- This will be the hidden view for the Dashboard tab -->
+        <div id="dashboardView" class="dashboard-view hidden">
+            <h2>Metrics Dashboard</h2>
+            <p>This feature is coming soon!</p>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
