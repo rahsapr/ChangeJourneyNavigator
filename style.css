@@ -177,3 +177,21 @@ body {
     white-space: nowrap; /* Prevents the title from wrapping to a new line */
     text-shadow: 1px 1px 2px black;
 }
+
+/* --- Connecting Line Styles --- */
+.line {
+    position: absolute;
+    height: 4px; /* Thickness of the line */
+    background-color: #6d5d44; /* Default line color */
+    transform-origin: left center; /* Rotates the line from its starting point */
+    z-index: -1; /* Place lines behind the milestone circles */
+}
+
+.line.complete {
+    background: linear-gradient(90deg, #28a745, #ffc107); /* Gradient from Green to Yellow */
+}
+
+.line.not-complete {
+    background-image: linear-gradient(to right, #6c757d 50%, transparent 50%);
+    background-size: 15px 4px; /* Creates a dashed/dotted effect */
+}
