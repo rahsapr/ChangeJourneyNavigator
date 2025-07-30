@@ -30,6 +30,20 @@
                 <div class="header-controls">
                     <button id="downloadCsvBtn" class="control-btn"><i class="fa-solid fa-download"></i> Download CSV</button>
                     <button id="addTaskBtn" class="control-btn primary"><i class="fa-solid fa-plus"></i> Add Task</button>
+                    <!-- NEW: Add the Group by Dropdown -->
+                    <div id="boardGroupBy" class="control-group hidden">
+                        <label for="groupBySelect">Group by:</label>
+                        <select id="groupBySelect" class="control-select">
+                            <option value="Status">Status</option>
+                            <option value="Workstream">Workstream</option>
+                            <option value="Owner">Owner</option>
+                            <option value="Phase">Phase</option>
+                        </select>
+                    </div>
+                    <button id="downloadCsvBtn" class="control-btn"><i class="fa-solid fa-download"></i> Download CSV</button>
+                    <button id="addTaskBtn" class="control-btn primary"><i class="fa-solid fa-plus"></i> Add Task</button>
+                </div>
+
                 </div>
             </header>
 
