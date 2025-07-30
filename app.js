@@ -1,84 +1,189 @@
-/* --- GLOBAL STYLES & THEME --- */
-:root {
-    --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    --bg-sidebar: #191d23;
-    --bg-main: #22272e;
-    --bg-header: #2d333b;
-    --bg-element: #2d333b;
-    --border-color: #444c56;
-    --text-primary: #cdd9e5;
-    --text-secondary: #768390;
-    --accent-blue: #58a6ff;
-    --status-done: #3fb950;
-    --status-progress: #bb86fc;
-    --status-todo: #768390;
-    --danger-red: #f85149;
+class MonarchApp {
+    constructor() {
+        this.dataStore = [];
+        this.activeView = 'list';
+        this.elements = {
+            viewContainer: document.getElementById('viewContainer'),
+            viewTitle: document.getElementById('viewTitle'),
+            navItems: document.querySelectorAll('.nav-item'),
+            csvUploader: document.getElementById('csvUploader'),
+            taskListBody: document.getElementById('taskListBody'),
+            addTaskBtn: document.getElementById('addTaskBtn'),
+            downloadCsvBtn: document.getElementById('downloadCsvBtn'),
+            // Modal elements
+            modal: document.getElementById('taskModal'),
+            modalTitle: document.getElementById('modalTitle'),
+            taskForm: document.getElementById('taskForm'),
+            cancelBtn: document.getElementById('cancelBtn'),
+            deleteTaskBtn: document.getElementById('deleteTaskBtn'),
+            taskIdInput: document.getElementById('taskId'),
+        };
+        this.init();
+    }
+
+    init() {
+        this.elements.csvUploader.addEventListener('change', this.handleFileUpload.bind(this));
+        this.elements.navItems.forEach(item => {
+            item.addEventListener('click', () => this.setActiveView(item.dataset.view));
+        });
+        this.elements.addTaskBtn.addEventListener('click', () => this.openTaskModal());
+        this.elements.downloadCsvBtn.addEventListener('click', this.downloadCsv.bind(this));
+        this.elements.taskForm.addEventListener('submit', this.handleFormSubmit.bind(this));
+        this.elements.cancelBtn.addEventListener('click', () => this.closeTaskModal());
+        this.elements.deleteTaskBtn.addEventListener('click', this.handleDeleteTask.bind(this));
+    }
+
+    // --- DATA MANAGEMENT ---
+    handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        Papa.parse(file, {
+            header: true, dynamicTyping: true, skipEmptyLines: true,
+            complete: (results) => {
+                this.dataStore = results.data.map(d => ({...d, ID: d.ID || Date.now() + Math.random()}));
+                this.render();
+            }
+        });
+    }
+
+    downloadCsv() {
+        const csv = Papa.unparse(this.dataStore);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", "monarch_plan_updated.csv");
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    updateTask(taskData) {
+        const index = this.dataStore.findIndex(t => t.ID == taskData.ID);
+        if (index > -1) {
+            this.dataStore[index] = { ...this.dataStore[index], ...taskData };
+        } else {
+            // It's a new task
+            this.dataStore.push({ ...taskData, ID: Date.now() });
+        }
+        this.render();
+    }
+
+    deleteTask(taskId) {
+        this.dataStore = this.dataStore.filter(t => t.ID != taskId);
+        this.render();
+    }
+    
+    // --- NAVIGATION & RENDERING ---
+    setActiveView(viewName) {
+        this.activeView = viewName;
+        this.elements.navItems.forEach(item => {
+            item.classList.toggle('active', item.dataset.view === viewName);
+        });
+        document.querySelectorAll('.view').forEach(view => {
+            view.classList.toggle('active', view.id === `${viewName}View`);
+        });
+        this.elements.viewTitle.textContent = document.querySelector(`.nav-item[data-view="${viewName}"]`).title;
+    }
+
+    render() {
+        // This is the central render function. It will eventually render all views.
+        this.renderListView();
+        // Future render functions will go here (renderBoardView(), renderGanttView())
+    }
+
+    renderListView() {
+        this.elements.taskListBody.innerHTML = '';
+        if (this.dataStore.length === 0) {
+            this.elements.taskListBody.innerHTML = '<tr><td colspan="7" class="placeholder-text">No data loaded. Upload a CSV to get started.</td></tr>';
+            return;
+        }
+
+        this.dataStore.forEach(task => {
+            const row = document.createElement('tr');
+            row.dataset.taskId = task.ID;
+            row.innerHTML = `
+                <td>
+                    <span class="status-badge ${task.Status.toLowerCase().replace(' ', '-')}">
+                        <i class="${this.getStatusIcon(task.Status)}"></i>
+                        ${task.Status}
+                    </span>
+                </td>
+                <td>${task.Title}</td>
+                <td>${task.Workstream || 'N/A'}</td>
+                <td>${task.Owner || 'N/A'}</td>
+                <td>${task.StartDate || 'N/A'}</td>
+                <td>${task.EndDate || 'N/A'}</td>
+                <td class="action-buttons">
+                    <button class="edit-btn" title="Edit Task"><i class="fa-solid fa-pen"></i></button>
+                </td>
+            `;
+            this.elements.taskListBody.appendChild(row);
+        });
+        
+        // Add event listeners to the new edit buttons
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const taskId = e.currentTarget.closest('tr').dataset.taskId;
+                this.openTaskModal(taskId);
+            });
+        });
+    }
+
+    // --- MODAL & FORM LOGIC ---
+    openTaskModal(taskId = null) {
+        this.elements.taskForm.reset();
+        if (taskId) {
+            const task = this.dataStore.find(t => t.ID == taskId);
+            if (task) {
+                this.elements.modalTitle.textContent = 'Edit Task';
+                this.elements.taskIdInput.value = task.ID;
+                document.getElementById('title').value = task.Title || '';
+                document.getElementById('status').value = task.Status || 'To Do';
+                document.getElementById('workstream').value = task.Workstream || '';
+                document.getElementById('owner').value = task.Owner || '';
+                document.getElementById('startDate').value = task.StartDate || '';
+                document.getElementById('endDate').value = task.EndDate || '';
+                this.elements.deleteTaskBtn.classList.remove('hidden');
+            }
+        } else {
+            this.elements.modalTitle.textContent = 'Add New Task';
+            this.elements.taskIdInput.value = ''; // Clear ID for new task
+            this.elements.deleteTaskBtn.classList.add('hidden');
+        }
+        this.elements.modal.classList.remove('hidden');
+    }
+    
+    closeTaskModal() {
+        this.elements.modal.classList.add('hidden');
+    }
+
+    handleFormSubmit(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const taskData = Object.fromEntries(formData.entries());
+        taskData.ID = this.elements.taskIdInput.value; // Get the ID from hidden input
+        this.updateTask(taskData);
+        this.closeTaskModal();
+    }
+    
+    handleDeleteTask() {
+        const taskId = this.elements.taskIdInput.value;
+        if (taskId && confirm('Are you sure you want to delete this task?')) {
+            this.deleteTask(taskId);
+            this.closeTaskModal();
+        }
+    }
+
+    // --- UTILITY ---
+    getStatusIcon(status) {
+        switch (status) {
+            case 'Done': return 'fa-solid fa-check-circle';
+            case 'In Progress': return 'fa-solid fa-circle-half-stroke';
+            default: return 'fa-regular fa-circle';
+        }
+    }
 }
 
-body {
-    font-family: var(--font-main);
-    background-color: var(--bg-main);
-    color: var(--text-primary);
-    margin: 0;
-    overflow: hidden;
-    font-size: 14px;
-}
-
-/* --- LAYOUT --- */
-#monarchApp { display: flex; height: 100vh; }
-.sidebar { width: 55px; background-color: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: center; padding: 15px 0; flex-shrink: 0; }
-.main-content { flex-grow: 1; display: flex; flex-direction: column; }
-.main-header { padding: 10px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-.view-container { flex-grow: 1; overflow: hidden; position: relative; }
-.view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; visibility: hidden; transition: opacity 0.2s, visibility 0.2s; }
-.view.active { opacity: 1; visibility: visible; }
-
-/* --- SIDEBAR --- */
-.sidebar-logo { font-size: 1.6rem; color: var(--accent-blue); margin-bottom: 25px; }
-.sidebar-nav { list-style: none; padding: 0; margin: 0; text-align: center; }
-.nav-item { font-size: 1.4rem; color: var(--text-secondary); padding: 12px 0; cursor: pointer; transition: color 0.2s; }
-.nav-item:hover, .nav-item.active { color: var(--accent-blue); }
-.sidebar-footer { margin-top: auto; }
-.sidebar-footer label { cursor: pointer; color: var(--text-secondary); font-size: 1.4rem; }
-#csvUploader { display: none; }
-
-/* --- HEADER & CONTROLS --- */
-.main-header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
-.control-btn { background-color: var(--bg-element); border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 12px; border-radius: 6px; font-weight: 500; cursor: pointer; transition: background-color 0.2s; }
-.control-btn:hover { background-color: #3e444d; }
-.control-btn.primary { background-color: #33925b; border-color: #33925b; }
-.control-btn.primary:hover { background-color: #3fb950; }
-.header-controls { display: flex; gap: 10px; }
-.control-btn i { margin-right: 6px; }
-
-/* --- LIST VIEW & TABLE --- */
-.list-view-container { height: 100%; overflow-y: auto; }
-table { width: 100%; border-collapse: collapse; }
-th { text-align: left; padding: 12px 15px; font-size: 12px; color: var(--text-secondary); text-transform: uppercase; border-bottom: 1px solid var(--border-color); }
-td { padding: 12px 15px; border-bottom: 1px solid var(--border-color); }
-tr:hover { background-color: #2a2f37; }
-.status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; }
-.status-badge.done { background-color: rgba(63, 185, 80, 0.15); color: var(--status-done); }
-.status-badge.in-progress { background-color: rgba(187, 134, 252, 0.15); color: var(--status-progress); }
-.status-badge.to-do { background-color: rgba(118, 131, 144, 0.15); color: var(--status-todo); }
-.action-buttons button { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 14px; padding: 5px; }
-.action-buttons button:hover { color: var(--accent-blue); }
-.placeholder-text { display: flex; justify-content: center; align-items: center; height: 100%; color: var(--text-secondary); }
-
-/* --- MODAL --- */
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-.modal-overlay.hidden { display: none; }
-.modal-content { background-color: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; width: 100%; max-width: 600px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-.modal-content form { padding: 25px; }
-.modal-content h2 { margin: 0 0 20px 0; font-size: 1.2rem; }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
-.form-group { display: flex; flex-direction: column; }
-.form-group label { margin-bottom: 5px; font-size: 12px; color: var(--text-secondary); }
-.form-group input, .form-group select { background-color: var(--bg-sidebar); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px; border-radius: 6px; }
-.modal-actions { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 10px; }
-.modal-actions button { background-color: var(--bg-element); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 16px; border-radius: 6px; font-weight: 500; cursor: pointer; transition: background-color 0.2s; }
-.modal-actions button.primary { background-color: #33925b; border-color: #33925b; }
-.modal-actions button.primary:hover { background-color: #3fb950; }
-.modal-actions button.btn-danger { color: var(--danger-red); }
-.modal-actions button.btn-danger:hover { background-color: rgba(248, 81, 73, 0.1); }
-.modal-actions div { display: flex; gap: 10px; }
+new MonarchApp();
