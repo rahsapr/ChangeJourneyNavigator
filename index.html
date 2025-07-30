@@ -3,64 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Synapse</title>
+    <title>Project Catalyst</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
 </head>
 <body>
-    <div class="synapse-app">
-        <!-- NAV SIDEBAR -->
+    <div id="catalystApp" class="app-container">
+        <!-- Sidebar Navigation -->
         <nav class="sidebar">
-            <div class="logo"><i class="fa-solid fa-brain"></i></div>
-            <ul>
-                <li class="nav-item active" data-view="plan" title="Plan"><i class="fa-solid fa-list-check"></i></li>
-                <li class="nav-item" data-view="analytics" title="Analytics"><i class="fa-solid fa-chart-pie"></i></li>
+            <div class="sidebar-logo"><i class="fa-solid fa-atom"></i></div>
+            <ul class="sidebar-nav">
+                <li class="nav-item active" data-view="board" title="Impact Board"><i class="fa-solid fa-table-columns"></i></li>
+                <li class="nav-item" data-view="heatmap" title="Stakeholder Heatmap"><i class="fa-solid fa-fire"></i></li>
+                <li class="nav-item" data-view="comms" title="Comms Hub"><i class="fa-solid fa-bullhorn"></i></li>
             </ul>
-            <div class="file-loader">
-                <label for="csvUploader" title="Load Plan"><i class="fa-solid fa-upload"></i></label>
+            <div class="sidebar-footer">
+                <label for="csvUploader" title="Load New Plan"><i class="fa-solid fa-upload"></i></label>
                 <input type="file" id="csvUploader" accept=".csv">
             </div>
         </nav>
 
-        <!-- MAIN CONTENT AREA -->
-        <div class="main-content">
-            <!-- PLAN VIEW (default) -->
-            <div id="planView" class="view active">
-                <main class="plan-column">
-                    <header class="main-header">
-                        <h2>Change Plan</h2>
-                        <div id="planFilters"> <!-- Filters will go here --> </div>
-                    </header>
-                    <div id="phaseList" class="phase-list">
-                        <div class="placeholder">Load a plan to begin.</div>
-                    </div>
-                </main>
-                <aside class="context-column">
-                    <div class="context-header">
-                        <h3>Impact Network</h3>
-                    </div>
-                    <div id="impactNetworkGraph" class="graph-container"></div>
-                </aside>
-            </div>
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="main-header">
+                <h1 id="viewTitle">Impact Board</h1>
+                <div class="header-controls">
+                    <!-- Future controls like filters can go here -->
+                </div>
+            </header>
 
-            <!-- ANALYTICS VIEW -->
-            <div id="analyticsView" class="view">
-                <header class="main-header">
-                    <h2>Analytics Hub</h2>
-                </header>
-                <div class="analytics-grid">
-                    <div class="kpi-card" id="kpiOverallProgress"></div>
-                    <div class="kpi-card" id="kpiRiskDistribution"></div>
-                    <div class="kpi-card" id="kpiSentiment"></div>
-                    <div class="chart-card" id="chartTasksByPhase"></div>
-                    <div class="chart-card" id="chartTasksByOwner"></div>
+            <!-- Views will be dynamically swapped here -->
+            <div id="viewContainer" class="view-container">
+                
+                <!-- Impact Board View -->
+                <div id="boardView" class="view active">
+                    <div class="board-columns">
+                        <!-- Columns and cards will be rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Stakeholder Heatmap View -->
+                <div id="heatmapView" class="view">
+                    <!-- Heatmap will be rendered by JS -->
+                </div>
+
+                <!-- Comms Hub View -->
+                <div id="commsView" class="view">
+                    <!-- Comms Hub will be rendered by JS -->
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
-    <!-- Professional Charting Library: ECharts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.0/echarts.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="app.js"></script>
 </body>
