@@ -3,34 +3,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Get references to the HTML elements we'll need to interact with
     const csvUploader = document.getElementById('csvUploader');
+    // --- NEW: Get references to our modal elements ---
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalDescription = document.getElementById('modalDescription');
+    const closeButton = document.querySelector('.close-button');
+
 
     // --- Event Listener for the File Uploader ---
-    // This function will run whenever the user selects a file
     csvUploader.addEventListener('change', (event) => {
         const file = event.target.files[0];
+        if (!file) return;
 
-        // Check if a file was actually selected
-        if (!file) {
-            console.log("No file selected.");
-            return; // Stop the function
-        }
-
-        console.log("File selected:", file.name);
-
-        // Use Papa Parse to read the CSV file
         Papa.parse(file, {
-            header: true, // This tells Papa Parse the first row of the CSV is the header
-            dynamicTyping: true, // This automatically converts numbers and booleans
-            skipEmptyLines: true, // Ignore any blank lines in the file
+            header: true,
+            dynamicTyping: true,
+            skipEmptyLines: true,
             complete: (results) => {
-                // This function runs when parsing is finished
                 console.log("Parsing Complete!");
-                
-                // We now call our new function to draw the map!
                 renderMap(results.data); 
             },
             error: (error) => {
-                // This function runs if there's an error parsing the file
                 console.error("Error parsing CSV:", error);
                 alert("There was an error parsing your CSV file. Please check the console for details.");
             }
@@ -38,42 +31,58 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     /**
-     * Renders the milestones on the map based on the provided data.
+     * Renders the milestones on the map and attaches click events.
      * @param {Array<Object>} milestones - An array of milestone objects from the CSV.
      */
     function renderMap(milestones) {
         const mapContainer = document.getElementById('mapContainer');
-        // Clear any old milestones from the map before drawing new ones
         mapContainer.innerHTML = '';
 
-        // Loop through each milestone object from our CSV data
         milestones.forEach(milestone => {
-            // Create a new div element for the milestone marker
             const milestoneElement = document.createElement('div');
-            
-            // Add a general 'milestone' class for basic styling
             milestoneElement.className = 'milestone';
-
-            // Add a specific class based on the 'Status' for color-coding
-            // We'll convert "In Progress" to "in-progress" for a valid CSS class name
+            
             const statusClass = milestone.Status.toLowerCase().replace(' ', '-');
             milestoneElement.classList.add(statusClass);
 
-            // Position the milestone on the map using the X and Y coordinates
             milestoneElement.style.left = `${milestone.X_Coord}%`;
             milestoneElement.style.top = `${milestone.Y_Coord}%`;
 
-            // Create an inner element for the title text
             const titleElement = document.createElement('div');
             titleElement.className = 'milestone-title';
             titleElement.textContent = milestone.Title;
             
-            // Add the title to the milestone marker
             milestoneElement.appendChild(titleElement);
+            
+            // --- NEW: Add the click event listener to each milestone ---
+            milestoneElement.addEventListener('click', () => {
+                // Populate the modal with the data from this specific milestone
+                modalTitle.textContent = milestone.Title;
+                modalDescription.textContent = milestone.Description;
 
-            // Add the completed milestone marker to the map
+                // Show the modal by removing the 'hidden' class
+                modal.classList.remove('hidden');
+            });
+
             mapContainer.appendChild(milestoneElement);
         });
     }
+
+    // --- NEW: Functions to close the modal ---
+    function closeModal() {
+        modal.classList.add('hidden');
+    }
+
+    // Close the modal when the '×' button is clicked
+    closeButton.addEventListener('click', closeModal);
+
+    // Close the modal when the user clicks on the dark background area
+    modal.addEventListener('click', (event) => {
+        // We only close it if the click is on the modal background itself,
+        // not on the content box inside it.
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
 
 });
