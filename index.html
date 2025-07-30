@@ -3,39 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Change Journey Navigator</title>
+    <title>Project Genesis: Mission Control</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header class="controls">
-        <h1>Change Journey Navigator</h1>
-        <label for="csvUploader" class="uploader-label">Upload Journey CSV</label>
-        <input type="file" id="csvUploader" accept=".csv">
-    </header>
+    <div class="dashboard-container">
+        <!-- LEFT PANEL: The main mission list -->
+        <aside class="left-panel">
+            <header class="main-header">
+                <h1>PROJECT GENESIS</h1>
+                <label for="csvUploader" class="uploader-label">Load Mission Plan</label>
+                <input type="file" id="csvUploader" accept=".csv">
+            </header>
 
-    <main>
-        <div id="progressBarContainer">
-            <div id="progressBar"></div>
-            <span id="progressText">Upload a file to begin...</span>
-        </div>
+            <div class="overall-progress">
+                <div class="progress-bar-container">
+                    <div id="overallProgressBar" class="progress-bar"></div>
+                </div>
+                <span id="overallProgressText">Load a plan to begin...</span>
+            </div>
 
-        <div id="mapContainer">
-            <!-- Milestones will be dynamically added here by JavaScript -->
-        </div>
-    </main>
+            <div id="phaseList" class="phase-list">
+                <!-- Phases will be dynamically added here -->
+            </div>
+        </aside>
 
-    <!-- Modal for displaying milestone details (hidden by default) -->
-    <div id="modal" class="hidden">
-        <div class="modal-content">
-            <span class="close-button">×</span>
-            <h2 id="modalTitle">Milestone Title</h2>
-            <p id="modalDescription">Details about the milestone will appear here.</p>
-        </div>
+        <!-- RIGHT PANEL: The details and map view -->
+        <main class="right-panel">
+            <div id="detailView" class="detail-view">
+                <div class="detail-placeholder">
+                    <h2>MILESTONE DETAILS</h2>
+                    <p>Select a milestone from the list to view its details.</p>
+                </div>
+                <div id="detailContent" class="detail-content hidden">
+                    <h2 id="detailTitle"></h2>
+                    <div class="detail-grid">
+                        <div>Status</div><div id="detailStatus" class="status-badge"></div>
+                        <div>Phase</div><div id="detailPhase"></div>
+                        <div>Risk</div><div id="detailRisk" class="risk-badge"></div>
+                    </div>
+                    <h3>Description</h3>
+                    <p id="detailDescription"></p>
+                </div>
+            </div>
+
+            <div id="starmapView" class="starmap-view hidden">
+                 <!-- The visual starmap will be rendered here -->
+            </div>
+            
+            <div class="view-toggle">
+                <button id="toggleButton" class="toggle-button">Show Starmap</button>
+            </div>
+        </main>
     </div>
 
-    <!-- Load the Papa Parse library first -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <!-- Load our custom script second -->
     <script src="app.js"></script>
 </body>
 </html>
