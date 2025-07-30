@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Change Journey Navigator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="controls">
+        <h1>Change Journey Navigator</h1>
+        <label for="csvUploader" class="uploader-label">Upload Journey CSV</label>
+        <input type="file" id="csvUploader" accept=".csv">
+    </header>
+
+    <main>
+        <div id="progressBarContainer">
+            <div id="progressBar"></div>
+            <span id="progressText">Upload a file to begin...</span>
+        </div>
+
+        <div id="mapContainer">
+            <!-- Milestones will be dynamically added here by JavaScript -->
+        </div>
+    </main>
+
+    <!-- Modal for displaying milestone details (hidden by default) -->
+    <div id="modal" class="hidden">
+        <div class="modal-content">
+            <span class="close-button">×</span>
+            <h2 id="modalTitle">Milestone Title</h2>
+            <p id="modalDescription">Details about the milestone will appear here.</p>
+        </div>
+    </div>
+
+    <!-- JavaScript file will be loaded last -->
+    <script src="app.js"></script>
+</body>
+</html>
