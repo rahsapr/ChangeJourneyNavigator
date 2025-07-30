@@ -1,166 +1,155 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // --- GLOBAL STATE & SELECTORS ---
-    let allData = [];
-    const selectors = {
-        csvUploader: document.getElementById('csvUploader'),
-        navItems: document.querySelectorAll('.nav-item'),
-        views: document.querySelectorAll('.view'),
-        phaseList: document.getElementById('phaseList'),
-        impactNetworkGraph: document.getElementById('impactNetworkGraph'),
-        analyticsView: document.getElementById('analyticsView')
-    };
-    let charts = {}; // To hold chart instances
+class CatalystApp {
+    constructor() {
+        this.data = [];
+        this.activeView = 'board';
+        this.elements = {
+            viewContainer: document.getElementById('viewContainer'),
+            viewTitle: document.getElementById('viewTitle'),
+            navItems: document.querySelectorAll('.nav-item'),
+            csvUploader: document.getElementById('csvUploader'),
+        };
+        this.init();
+    }
 
-    // --- INITIALIZATION ---
-    const init = () => {
-        selectors.csvUploader.addEventListener('change', handleFileUpload);
-        selectors.navItems.forEach(item => item.addEventListener('click', handleNavClick));
-    };
+    init() {
+        this.elements.csvUploader.addEventListener('change', this.handleFileUpload.bind(this));
+        this.elements.navItems.forEach(item => {
+            item.addEventListener('click', () => this.setActiveView(item.dataset.view));
+        });
+        this.renderPlaceholder();
+    }
 
-    // --- DATA HANDLING ---
-    const handleFileUpload = (event) => {
+    handleFileUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
         Papa.parse(file, {
             header: true, dynamicTyping: true, skipEmptyLines: true,
             complete: (results) => {
-                allData = results.data;
-                renderApp();
+                this.data = results.data;
+                this.render();
             }
         });
-    };
+    }
 
-    // --- MAIN RENDER LOGIC ---
-    const renderApp = () => {
-        renderPlanView();
-        renderAnalyticsView();
-    };
+    setActiveView(viewName) {
+        if (!this.elements.viewContainer.querySelector(`#${viewName}View`)) return;
 
-    // --- NAVIGATION ---
-    const handleNavClick = (event) => {
-        const viewName = event.currentTarget.dataset.view;
-        selectors.navItems.forEach(i => i.classList.remove('active'));
-        event.currentTarget.classList.add('active');
-
-        selectors.views.forEach(v => v.classList.remove('active'));
-        document.getElementById(`${viewName}View`).classList.add('active');
+        this.activeView = viewName;
+        this.elements.navItems.forEach(item => {
+            item.classList.toggle('active', item.dataset.view === viewName);
+        });
         
-        // ECharts needs to be resized when its container becomes visible
-        if(viewName === 'analytics') {
-            Object.values(charts).forEach(chart => chart.resize());
+        document.querySelectorAll('.view').forEach(view => {
+            view.classList.toggle('active', view.id === `${viewName}View`);
+        });
+
+        this.elements.viewTitle.textContent = document.querySelector(`.nav-item[data-view="${viewName}"]`).title;
+    }
+
+    render() {
+        if (this.data.length === 0) {
+            this.renderPlaceholder();
+            return;
         }
-    };
-
-    // --- PLAN VIEW ---
-    const renderPlanView = () => {
-        const phases = allData.reduce((acc, row) => { (acc[row.Phase] = acc[row.Phase] || []).push(row); return acc; }, {});
-        selectors.phaseList.innerHTML = Object.keys(phases).map(phaseName => `
-            <div class="phase-group expanded">
-                <div class="phase-group-header">
-                    <i class="fa-solid fa-chevron-right chevron"></i> ${phaseName}
-                </div>
-                <div class="milestone-table">
-                    ${phases[phaseName].map(ms => `
-                        <div class="milestone-row" data-id="${ms.ID}">
-                            <div class="ms-status" title="${ms.Status}"><i class="${getIconForStatus(ms.Status)}"></i></div>
-                            <div class="ms-title">${ms.Title}</div>
-                            <div class="ms-owner">${ms.Owner}</div>
-                            <div class="ms-risk" title="Risk: ${ms.Risk}"><div class="risk-badge ${ms.Risk}"></div></div>
-                        </div>`).join('')}
-                </div>
-            </div>`).join('');
-        
-        renderImpactNetwork(allData);
-        addPlanEventListeners();
-    };
+        this.renderBoardView();
+        this.renderHeatmapView();
+        this.renderCommsView();
+        this.setActiveView('board'); // Default to board view after load
+    }
     
-    const addPlanEventListeners = () => {
-        document.querySelectorAll('.phase-group-header').forEach(h => h.addEventListener('click', () => h.parentElement.classList.toggle('expanded')));
-    };
+    renderPlaceholder() {
+        this.elements.viewContainer.innerHTML = `<div class="view active" style="display: flex; justify-content: center; align-items: center; color: var(--text-secondary);">Load a Catalyst Plan CSV to begin.</div>`;
+    }
 
-    // --- ANALYTICS VIEW ---
-    const renderAnalyticsView = () => {
-        // KPI Calculations
-        const total = allData.length;
-        const completed = allData.filter(d => d.Status === 'Complete').length;
-        const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
-        
-        const riskCounts = allData.reduce((acc, d) => { acc[d.Risk] = (acc[d.Risk] || 0) + 1; return acc; }, {});
-        const sentimentCounts = allData.reduce((acc, d) => { acc[d.Sentiment] = (acc[d.Sentiment] || 0) + 1; return acc; }, {});
+    renderBoardView() {
+        let boardView = document.getElementById('boardView');
+        if (!boardView) {
+            boardView = document.createElement('div');
+            boardView.id = 'boardView';
+            boardView.className = 'view';
+            this.elements.viewContainer.appendChild(boardView);
+        }
 
-        // Render KPIs
-        document.getElementById('kpiOverallProgress').innerHTML = `<div class="kpi-title">Overall Progress</div><div class="kpi-value">${progress}%</div><div class="kpi-subvalue">${completed} / ${total} items</div>`;
-        document.getElementById('kpiRiskDistribution').innerHTML = `<div class="kpi-title">High & Medium Risk</div><div class="kpi-value">${(riskCounts.High || 0) + (riskCounts.Medium || 0)}</div><div class="kpi-subvalue">${riskCounts.High || 0} High, ${riskCounts.Medium || 0} Medium</div>`;
-        document.getElementById('kpiSentiment').innerHTML = `<div class="kpi-title">Overall Sentiment</div><div class="kpi-value">${sentimentCounts.Positive || 0} <span style="color:var(--status-green)">▲</span> ${sentimentCounts.Negative || 0} <span style="color:var(--status-red)">▼</span></div><div class="kpi-subvalue">Positive vs Negative</div>`;
+        const columns = this.data.reduce((acc, task) => {
+            const status = task.Status || 'Backlog';
+            if (!acc[status]) acc[status] = [];
+            acc[status].push(task);
+            return acc;
+        }, {});
 
-        // Render Charts
-        renderTasksByPhaseChart(allData);
-        renderTasksByOwnerChart(allData);
-    };
+        const columnOrder = ['Complete', 'In Progress', 'Not Started', 'Backlog'];
 
-    // --- ECHARTS VISUALIZATIONS ---
-    const renderImpactNetwork = (data) => {
-        const chart = echarts.init(selectors.impactNetworkGraph);
-        const stakeholderGroups = [...new Set(data.map(d => d.StakeholderGroup))];
-        const phases = [...new Set(data.map(d => d.Phase))];
+        boardView.innerHTML = `
+            <div class="board-columns">
+                ${columnOrder.map(colName => {
+                    const tasks = columns[colName] || [];
+                    return `
+                        <div class="board-column">
+                            <div class="column-header">${colName} (${tasks.length})</div>
+                            <div class="column-cards">
+                                ${tasks.map(task => this.createTaskCard(task)).join('')}
+                            </div>
+                        </div>
+                    `
+                }).join('')}
+            </div>
+        `;
+    }
 
-        const nodes = [
-            ...stakeholderGroups.map(g => ({ id: g, name: g, symbolSize: 50, category: 'group' })),
-            ...phases.map(p => ({ id: p, name: p, symbolSize: 30, category: 'phase' }))
-        ];
-        const links = data.map(d => ({ source: d.Phase, target: d.StakeholderGroup }));
-        
-        const option = {
-            tooltip: {},
-            series: [{
-                type: 'graph', layout: 'force',
-                nodes: nodes, links: links,
-                categories: [{ name: 'group' }, { name: 'phase' }],
-                roam: true, label: { show: true },
-                force: { repulsion: 200 }
-            }]
-        };
-        chart.setOption(option);
-    };
+    createTaskCard(task) {
+        const impactClass = task.ImpactScore >= 8 ? 'high-impact' : task.ImpactScore >= 5 ? 'medium-impact' : '';
+        const riskClass = task.Risk === 'High' ? 'high-risk' : '';
+        const cardScale = 1 + (task.ImpactScore / 10) * 0.1; // Subtle size increase
 
-    const renderTasksByPhaseChart = (data) => {
-        const chartDom = document.getElementById('chartTasksByPhase');
-        charts.tasksByPhase = echarts.init(chartDom);
-        const phaseData = data.reduce((acc, d) => { acc[d.Phase] = (acc[d.Phase] || 0) + 1; return acc; }, {});
-        const option = {
-            title: { text: 'Tasks by Phase', textStyle: { color: 'var(--text-secondary)' } },
-            tooltip: { trigger: 'axis' },
-            xAxis: { type: 'category', data: Object.keys(phaseData) },
-            yAxis: { type: 'value' },
-            series: [{ data: Object.values(phaseData), type: 'bar' }],
-            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true }
-        };
-        charts.tasksByPhase.setOption(option);
-    };
-    
-    const renderTasksByOwnerChart = (data) => {
-        const chartDom = document.getElementById('chartTasksByOwner');
-        charts.tasksByOwner = echarts.init(chartDom);
-        const ownerData = data.reduce((acc, d) => { acc[d.Owner] = (acc[d.Owner] || 0) + 1; return acc; }, {});
-        const option = {
-            title: { text: 'Tasks by Owner', textStyle: { color: 'var(--text-secondary)' } },
-            tooltip: { trigger: 'item' },
-            series: [{
-                type: 'pie', radius: '60%',
-                data: Object.entries(ownerData).map(([name, value]) => ({name, value})),
-                emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' } }
-            }]
-        };
-        charts.tasksByOwner.setOption(option);
-    };
+        return `
+            <div class="task-card ${impactClass} ${riskClass}" style="transform: scale(${cardScale});">
+                <div class="card-title">${task.Title}</div>
+                <div class="card-footer">
+                    <span class="card-owner">${task.Owner}</span>
+                    <span class="sentiment-weather" title="Sentiment: ${task.Sentiment}">
+                        ${this.getSentimentIcon(task.Sentiment)}
+                    </span>
+                </div>
+            </div>
+        `;
+    }
 
-    // --- UTILITY FUNCTIONS ---
-    const getIconForStatus = (status) => {
-        if (status === 'Complete') return 'fa-solid fa-circle-check';
-        if (status === 'In Progress') return 'fa-solid fa-circle-half-stroke';
-        return 'fa-regular fa-circle';
-    };
+    getSentimentIcon(sentiment) {
+        switch (sentiment) {
+            case 'Positive': return '☀️';
+            case 'Negative': return '⛈️';
+            default: return '☁️';
+        }
+    }
 
-    // --- KICK OFF THE APP ---
-    init();
-});
+    renderHeatmapView() {
+        let heatmapView = document.getElementById('heatmapView');
+        if (!heatmapView) {
+            heatmapView = document.createElement('div');
+            heatmapView.id = 'heatmapView';
+            heatmapView.className = 'view';
+            this.elements.viewContainer.appendChild(heatmapView);
+        }
+        // Placeholder - a real implementation would use a charting library
+        heatmapView.innerHTML = `<h2>Stakeholder Heatmap (Coming Soon)</h2><p>This view will show the cumulative impact on each stakeholder group over time.</p>`;
+    }
+
+    renderCommsView() {
+        let commsView = document.getElementById('commsView');
+        if (!commsView) {
+            commsView = document.createElement('div');
+            commsView.id = 'commsView';
+            commsView.className = 'view';
+            this.elements.viewContainer.appendChild(commsView);
+        }
+        const commsTasks = this.data.filter(t => t.CommsNeeded === 'TRUE');
+        commsView.innerHTML = `
+            <h2>Comms Hub (${commsTasks.length} items require communication)</h2>
+            <ul>
+                ${commsTasks.map(task => `<li><strong>${task.Title}</strong>: impacts the <strong>${task.StakeholderGroup}</strong> team.</li>`).join('')}
+            </ul>
+        `;
+    }
+}
+
+new CatalystApp();
